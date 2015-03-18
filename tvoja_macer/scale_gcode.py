@@ -272,7 +272,12 @@ def sort_path(unsorted_, sorted_):
 if __name__=='__main__':
   if '--help' in sys.argv:
     print """Usage:
-      ./a.py GCODEFILE ranges [scale_factor] [--sort|--affine] [3+3 2D points]
+      ./a.py GCODEFILE ranges [scale_factor --sort|--affine|--merge S E] [3+3 2D points]
+
+      --merge S E: sometimes you want to sort points in all G code groups, so --merge tries
+      to group all lines between S and E. ex: "1-99" --merge G99 G80, creates one big group of
+      commands occurring between G99 and G80 and discards those between, since those can't serve
+      any purpose now.
 
       ex: ./a.py lala.ngc "7-19,33-58" 0.94 >newfile.ngc
       performs a simple scaling on selected lines.
@@ -288,6 +293,7 @@ if __name__=='__main__':
     exit(1)
   ranges = parse_ranges(sys.argv[2])
   sort_ = "--sort" in sys.argv
+  merge_ = "--merge" in sys.argv
   affine_ = "--affine" in sys.argv
   with open(sys.argv[1], "r") as fin:
     lines = fin.readlines()
@@ -300,8 +306,24 @@ if __name__=='__main__':
     if sort_:
       ranges = parse_ranges2(sys.argv[2])
       for i, rng in enumerate(ranges):
-        pts = filter(lambda __x: __x.x is not None,
-            map(Pt, lines[rng[0]:rng[-1]+1]))
+        if merge_:
+          m_p = sys.argv.index("--merge")
+          S = sys.argv[m_p+1]
+          E = sys.argv[m_p+2]
+          #print S, E
+          sections = filter(lambda __x: __x[0].strip() == S or __x[0].strip() == E, zip(lines[rng[0]:rng[-1]+1],range(rng[0],rng[-1]+1)))
+          #print sections
+          assert sections[0][0].strip() == S
+          rng = xrange(sections[0][1] + 1, rng[-1])
+          rngs = [range(sections[idx_][1], sections[idx_+1][1] + 1) for idx_ in range(1,len(sections)-1, 2)]
+          for r in rngs:
+            for lnm in r:
+              lines[lnm] = '\n'
+          #print lines
+          #print "KOKOT"
+
+        pts_orig = map(Pt, lines[rng[0]:rng[-1]+1])
+        pts = filter(lambda __x: __x.x is not None, pts_orig)
 #        print pts
         dump_region_to_png(pts, 'un_region{}.png'.format(i))
         p = pts[1:]
