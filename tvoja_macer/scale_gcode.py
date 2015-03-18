@@ -270,8 +270,23 @@ def sort_path(unsorted_, sorted_):
   return sort_path(u2[1:], sorted_ + [p1])
 
 if __name__=='__main__':
+  if '--help' in sys.argv:
+    print """Usage:
+      ./a.py GCODEFILE ranges [scale_factor] [--sort|--affine] [3+3 2D points]
+
+      ex: ./a.py lala.ngc "7-19,33-58" 0.94 >newfile.ngc
+      performs a simple scaling on selected lines.
+
+      ex: ./a.py lala.ngc "7-19,33-58" --sort >newfile.ngc
+      performs a shortest path first walk type sort on selected lines.
+      your machine should then spend less time traveling.
+
+      ex: ./a.py lala.ngc "7-19,33-58" --affine 1 1 1 2 2 2   4 4 6 6 8 4 >newfile.ngc
+      performs a affine transform sort on selected lines.
+      transformation is defined by 3 original points and 3 transformed points.
+    """
+    exit(1)
   ranges = parse_ranges(sys.argv[2])
-  scale = float(sys.argv[3])
   sort_ = "--sort" in sys.argv
   affine_ = "--affine" in sys.argv
   with open(sys.argv[1], "r") as fin:
@@ -317,6 +332,7 @@ if __name__=='__main__':
         line = find_transform_and_replace(line, aff)
         print line.strip()
     else:
+      scale = float(sys.argv[3])
       for lnum, line in enumerate(lines):
         if lnum not in ranges:
           print line.strip()
