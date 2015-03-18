@@ -272,7 +272,7 @@ def sort_path(unsorted_, sorted_):
 if __name__=='__main__':
   if '--help' in sys.argv:
     print """Usage:
-      ./a.py GCODEFILE ranges [scale_factor --sort|--affine|--merge S E] [3+3 2D points]
+      ./a.py GCODEFILE ranges [scale_factor] [--sort|--affine|--merge S E] [3+3 2D points]
 
       --merge S E: sometimes you want to sort points in all G code groups, so --merge tries
       to group all lines between S and E. ex: "1-99" --merge G99 G80, creates one big group of
