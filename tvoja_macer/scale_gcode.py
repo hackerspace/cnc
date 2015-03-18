@@ -276,6 +276,8 @@ if __name__=='__main__':
     print """Usage:
       {} GCODEFILE ranges [scale_factor] [--sort|--affine|--merge S E] [3+3 2D points]
 
+      n.b. this tools accepts drill files as well!
+
       --merge S E: sometimes you want to sort points in all G code groups, so --merge tries
       to group all lines between S and E. ex: "1-99" --merge G99 G80, creates one big group of
       commands occurring between G99 and G80 and discards those between, since those can't serve
