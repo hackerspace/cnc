@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import sys
 import os
 import png
@@ -109,6 +110,7 @@ def pt_norm2(pt0, pt1):
 def get_path_len(pts):
   return reduce(lambda (o, lng), p: (p, lng+pt_norm2(o, p)), pts[1:], (pts[0], 0))
 
+#this is ultra slow :)
 def dump_region_to_png(pts, fname):
   ps = map(lambda p: p.to_pair() , pts)
   scale = 255/float(len(ps)-1)
@@ -129,7 +131,7 @@ def dump_region_to_png(pts, fname):
 
   ln=len(img)
   for y in range(len(img)):
-    print>>sys.stderr, y,'of',ln,'   \r',
+    print>>sys.stderr, fname,y,'of',ln,'   \r',
     sys.stdout.flush()
     img[y] = reduce(lambda o, p: o + list(p), img[y], [])
   #print
@@ -272,7 +274,7 @@ def sort_path(unsorted_, sorted_):
 if __name__=='__main__':
   if '--help' in sys.argv:
     print """Usage:
-      ./a.py GCODEFILE ranges [scale_factor] [--sort|--affine|--merge S E] [3+3 2D points]
+      {} GCODEFILE ranges [scale_factor] [--sort|--affine|--merge S E] [3+3 2D points]
 
       --merge S E: sometimes you want to sort points in all G code groups, so --merge tries
       to group all lines between S and E. ex: "1-99" --merge G99 G80, creates one big group of
@@ -289,7 +291,7 @@ if __name__=='__main__':
       ex: ./a.py lala.ngc "7-19,33-58" --affine 1 1 1 2 2 2   4 4 6 6 8 4 >newfile.ngc
       performs a affine transform sort on selected lines.
       transformation is defined by 3 original points and 3 transformed points.
-    """
+    """.format(sys.argv[0])
     exit(1)
   ranges = parse_ranges(sys.argv[2])
   sort_ = "--sort" in sys.argv
