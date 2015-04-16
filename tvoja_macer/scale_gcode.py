@@ -291,7 +291,7 @@ if __name__=='__main__':
       your machine should then spend less time traveling.
 
       ex: ./a.py lala.ngc "7-19,33-58" --affine 1 1 1 2 2 2   4 4 6 6 8 4 >newfile.ngc
-      performs a affine transform sort on selected lines.
+      performs a affine transform on selected lines.
       transformation is defined by 3 original points and 3 transformed points.
     """.format(sys.argv[0])
     exit(1)
