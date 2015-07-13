@@ -102,6 +102,7 @@ def Affine_Fit( from_pts, to_pts ):
             return res
     return Transformation()
 
+from bilinear import bilinear
 from math import sqrt
 def pt_norm2(pt0, pt1):
   r0 = (pt1.x-pt0.x)**2 + (pt1.y-pt0.y)**2
@@ -179,6 +180,8 @@ def find_scale_and_replace(line, char, scale):
   return line
 
 def find_and_replace(line, char, nval):
+  if nval is None:
+    return line
   idx1 = line.find(char)
 
   comment_idx = line.find('(')
@@ -207,8 +210,26 @@ def find_transform_and_replace(line, aff):
   pt.y = t[1]
   return repr(pt)
 
+def find_zlevel_and_replace(line, M, base_z_level = None):
+  import bilinear
+  import copy
+  pt = Pt(line)
+  if pt.x is None or pt.y is None:
+    return line
+  if base_z_level is None:
+    base_z_level = 0.0
+  t = bilinear.bilinear(pt.x, pt.y, M)
+  if pt.z is None:
+    pt.add_z_before(t + base_z_level, 'F')
+    #print repr(pp).strip()
+    #print "G00 Z%.5f"%t
+  else:
+    pt.z += t
+  return repr(pt)
+
 XSEP=" X"
 YSEP=" Y"
+ZSEP=" Z"
 class Pt(object):
   def find_var(self, line, char):
     idx1 = line.find(char)
@@ -218,7 +239,8 @@ class Pt(object):
       return None
 
     if idx1 >= 0:
-      where, what = indexP(lambda d: d.isalpha() or d.isspace(), line[idx1+1:])
+      #print>>sys.stderr, "LOL", line[idx1+1:]
+      where, what = indexP(lambda d: d.isalpha() or d.isspace(), line[idx1+1:]+" ")
       #idx2 = line.find(" ", idx1)
       idx2 = where+idx1+1
       if idx2 < 0 and line[-1].isspace() and line[-2].isdigit():
@@ -230,6 +252,13 @@ class Pt(object):
   def to_pair(self):
     return (self.x, self.y)
 
+  def to_triple(self):
+    return (self.x, self.y, self.z)
+
+  def add_z_before(self, val, beforewhat):
+    idx = self.str_.find(beforewhat)
+    self.str_ = self.str_[:idx] + "Z%.5f "%val + self.str_[idx:]
+
   def __init__(self, str_):
     #print str_
     self.prefix = str_.split(" ")[0]
@@ -238,14 +267,22 @@ class Pt(object):
     self.x = self.x_[1] if self.x_ else None
     self.y_ = self.find_var(str_, 'Y')
     self.y = self.y_[1] if self.y_ else None
-    if (len(self.prefix) > str_.find('Y') or len(self.prefix) > str_.find('X')) \
-        and (str_.find('Y') != -1 or str_.find('X') != -1):
+    self.z_ = self.find_var(str_, 'Z')
+    self.z = self.z_[1] if self.z_ else None
+    if (len(self.prefix) > str_.find('Y') \
+        or len(self.prefix) > str_.find('X') \
+        or len(self.prefix) > str_.find('Z') \
+       ) and \
+       (str_.find('Y') != -1
+        or str_.find('X') != -1
+        or str_.find('Z') != -1):
       self.prefix = ''
 
     #print>>sys.stderr, "PREFIX=", self.prefix
 
   def __repr__(self):
     l = find_and_replace(self.str_, 'X', self.x)
+    l = find_and_replace(l, 'Z', self.z)
     return find_and_replace(l, 'Y', self.y)
     #return self.prefix + \
     #  XSEP + str(round(self.x, self.x_[2])) + \
@@ -271,10 +308,20 @@ def sort_path(unsorted_, sorted_):
     return sorted_ + unsorted_
   return sort_path(u2[1:], sorted_ + [p1])
 
+def command_name(line):
+  try:
+    return line.strip().split()[0]
+  except IndexError:
+    return ""
+
+
+def lerp(v0, v1, t):
+  return (1-t)*v0 + t*v1
+
 if __name__=='__main__':
   if '--help' in sys.argv:
     print """Usage:
-      {} GCODEFILE ranges [scale_factor] [--sort|--affine|--merge S E] [3+3 2D points]
+      {} GCODEFILE ranges [scale_factor] [--sort|--affine|--merge S E|--zlevel file_w_probed_data.ssv step_in_mm] [3+3 2D points]
 
       n.b. this tools accepts drill files as well!
 
@@ -293,12 +340,25 @@ if __name__=='__main__':
       ex: ./a.py lala.ngc "7-19,33-58" --affine 1 1 1 2 2 2   4 4 6 6 8 4 >newfile.ngc
       performs a affine transform on selected lines.
       transformation is defined by 3 original points and 3 transformed points.
+
+      ex: ./a.py lala.ngc "7-10,33-58" --zlevel data.ssv 0.05
+      levels your Z heigh for constant milling depth. intended for processing PCB milling
+      files with data from Z probe. it interpolates moves using bilinear transform.
+      input data are space separated triples x, y, z in mm COLS and ROWS.
+      lines are cut to pieces set by last parameter (0.05mm).
+        ex: 0.01 0.02 0.0023, 0.48 0.024 0.0031
+            0.019 0.51 0.0026, 0.50 0.498 0.0025
+            so this is 2x2 data in triples x y z
+            NOTE the , separator between triples!
+
+            n.b. for now - tool presumes EXACT EVEN SPACING between points in grid
     """.format(sys.argv[0])
     exit(1)
   ranges = parse_ranges(sys.argv[2])
   sort_ = "--sort" in sys.argv
   merge_ = "--merge" in sys.argv
   affine_ = "--affine" in sys.argv
+  zlevel_ = "--zlevel" in sys.argv
   with open(sys.argv[1], "r") as fin:
     lines = fin.readlines()
     last_line = 0
@@ -356,6 +416,69 @@ if __name__=='__main__':
           continue
 
         line = find_transform_and_replace(line, aff)
+        print line.strip()
+    elif zlevel_:
+      try:
+        fdata = sys.argv[sys.argv.index("--zlevel")+1]
+      except ValueError as e:
+        print>>sys.stderr, "after --zlevel must be a valid filename"
+        exit(1)
+      try:
+        intpstep = float(sys.argv[sys.argv.index("--zlevel")+2])
+      except IndexError as e:
+        print>>sys.stderr, "after --zlevel filename must be a valid interpolation step in milimeters"
+        exit(1)
+      except ValueError as e:
+        print>>sys.stderr, "after --zlevel filename must be a valid interpolation step in milimeters"
+        exit(1)
+      with open(fdata) as f_data:
+        #load data and turn them into floats
+        level_data = map(lambda __x: map(lambda __y: map(float, __y.split()), __x.split(',')), f_data.readlines())
+      #print level_data
+      z_level = 0.0 # in milimeters
+      milling = False
+      old_pt = None
+      for lnum, line in enumerate(lines):
+        if lnum not in ranges:
+          print line.strip()
+          continue
+        #print>>sys.stderr, "z:", z_level
+
+        #if "G00" == command_name(line):
+        #  old_pt = Pt(line)
+        if "G01" == command_name(line):
+          p = Pt(line)
+          if p.x is None and p.y is None:
+            z_level = p.z
+            if z_level < 0.0:
+              l = find_zlevel_and_replace("G01 X0.00000 Y0.00000 \n", level_data, base_z_level = z_level).strip()
+              #print>>sys.stderr, l
+              lpt = Pt(l)
+              line = find_and_replace(line, 'Z', lpt.z)
+              #print>>sys.stderr, z_level, repr(line), repr(old_pt)
+            # we've have found MILLING END OR BEGIN
+          elif z_level < 0.0:
+            #print>>sys.stderr, "FUHA", z_level
+            if old_pt is not None:
+              # CUT IT!!!
+              STEP = intpstep # in mm
+              segment_len = get_path_len([old_pt, p])[1]
+              #print>>sys.stderr, segment_len
+              t_step = STEP / segment_len
+              for itera in xrange(1, int(segment_len / STEP)):
+                intx_ = lerp(old_pt.x, p.x, itera * t_step)
+                inty_ = lerp(old_pt.y, p.y, itera * t_step)
+                #print>>sys.stderr, (intx_, inty_), (old_pt.x, p.x)
+                newline = find_and_replace(line, 'X', intx_)
+                newline = find_and_replace(newline, 'Y', inty_)
+
+                print find_zlevel_and_replace(newline, level_data, base_z_level = z_level).strip(), '( {} )'.format(itera)
+                #print "(chuj", itera, get_path_len([old_pt, Pt(newline)])[1], ")"
+
+              line = find_zlevel_and_replace(line, level_data, base_z_level = z_level)
+              old_pt = p
+            else:
+              old_pt = p
         print line.strip()
     else:
       scale = float(sys.argv[3])
