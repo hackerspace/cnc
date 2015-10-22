@@ -1,0 +1,54 @@
+#!/usr/bin/python3
+# Generate drilling cycles
+# for minor grid
+
+rows = 8
+cols = 8
+
+bed_x = 382.5
+bed_y = bed_x
+x_offset = 15
+y_offset = 15
+
+bed_x -= 1 * x_offset
+bed_y -= 1 * y_offset
+
+
+pre = '''
+G94
+G21
+G90
+G99
+'''
+
+template_1st = 'G81 R2 Z-1 F90 X{0:f} Y{1:f}\n'
+template = 'G81 X{0:f} Y{1:f}\n'
+
+post = 'G80'
+
+
+def gen():
+    out = ''
+    cx = x_offset
+    cy = y_offset
+    xstep = bed_x / cols
+    ystep = bed_y / rows
+    first = True
+
+    for i in range(rows + 1):
+        for j in range(cols + 1):
+            if first:
+                out += template_1st.format(cx, cy)
+                first = not True
+            else:
+                out += template.format(cx, cy)
+            cx += xstep
+
+        cx = x_offset
+        cy += ystep
+
+    return out
+
+print(pre)
+print(gen())
+print(post)
