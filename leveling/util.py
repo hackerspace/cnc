@@ -31,7 +31,7 @@ def load_gcode_commands(filename):
 
             parts = line.strip().split(' ')
             gcode, parts = parts[0], parts[1:]
-            print(gcode, parts)
+            #print(gcode, parts)
             command = {"cmd": gcode}
 
             for part in parts:
