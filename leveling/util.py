@@ -9,7 +9,9 @@ def load_calibration_matrix(filename):
             items = list()
             for col in cols:
                 item = list()
+                #print(col)
                 for i in col.strip().split(' '):
+                    #print(i)
                     item.append(float(i))
                 items.append(item)
 
@@ -29,10 +31,14 @@ def load_gcode_commands(filename):
 
             parts = line.strip().split(' ')
             gcode, parts = parts[0], parts[1:]
-
+            print(gcode, parts)
             command = {"cmd": gcode}
 
             for part in parts:
+                if part == '':
+                    continue
+                if part.startswith('('):
+                    break
                 command[part[0]] = part[1:]
 
             for axis in "XYZ":

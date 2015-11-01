@@ -8,7 +8,7 @@ b = 10
 
 for y in range(a):
     for x in range(b):
-        if y > 0:
+        if x > 0:
             print ",",
         print  x*5, y*5, sin(y) + cos(x),
 
