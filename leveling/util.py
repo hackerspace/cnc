@@ -25,7 +25,7 @@ def load_gcode_commands(filename):
 
     with open(filename) as fd:
 
-        prev_cmnd = {"cmd": 'shit', 'X': 0, 'Y': 0, 'Z': 0}
+        prev_cmnd = {"cmd": 'shit', 'X': 0, 'Y': 0, 'Z': 0, 'L': 0}
 
         for line in fd:
 
@@ -41,7 +41,7 @@ def load_gcode_commands(filename):
                     break
                 command[part[0]] = part[1:]
 
-            for axis in "XYZ":
+            for axis in "XYZL":
                 if axis not in command:
                     command[axis] = prev_cmnd[axis]
 
