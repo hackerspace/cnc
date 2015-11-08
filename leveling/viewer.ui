@@ -14,7 +14,14 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QHBoxLayout" name="horizontalLayout">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QPushButton" name="btnResetView">
+      <property name="text">
+       <string>Reset view</string>
+      </property>
+     </widget>
+    </item>
     <item>
      <widget class="ViewerWidget" name="gl" native="true"/>
     </item>

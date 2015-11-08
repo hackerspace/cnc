@@ -43,6 +43,16 @@ class ViewerWidget(QGLWidget):
       except ValueError:
         return 0,0,0
 
+    def resetView(self):
+      ViewerWidget.rotx = 0
+      ViewerWidget.roty = 0
+      s = self.object_size(self.gcode_points)
+      ViewerWidget.tranx = 0
+      ViewerWidget.trany = 0
+      ViewerWidget.tranz = -s[1]*3
+
+      self.update()
+
     def paintGL(self):
 
         glClearColor(0, 0, 0, 0)
@@ -71,22 +81,13 @@ class ViewerWidget(QGLWidget):
             start = self.gcode_points[i]
             end = self.gcode_points[i+1]
             try:
-              if start['cmd'] == 'G5':
-                L = start['L']
-                start = self.gcode_points[i+1]
-                end = self.gcode_points[i+2]
-              if end['cmd'] == 'G5':
-                L = end['L']
-                end = self.gcode_points[i+2]
-            except IndexError:
-              continue
-            #glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, [i/float(len(self.gcode_points)), 0.5, float(L), 1.0])
-            glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, [0.2, 0.2, 0.2, 1.0])
-            glColor3f(i/float(len(self.gcode_points)), 0.5, float(L))
-#            glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, [0.8, 0.8, 0.8, 1.0])
-            try:
+              glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, [0.2, 0.2, 0.2, 1.0])
+              glColor3f(i/float(len(self.gcode_points)), 0.5, float(start['L']))
               glNormal3f(0,0,1)
               glVertex3f(*map(float, [start['X'], start['Y'], start['Z']]))
+
+              glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, [0.2, 0.2, 0.2, 1.0])
+              glColor3f((i+1)/float(len(self.gcode_points)), 0.5, float(end['L']))
               glNormal3f(0,0,1)
               glVertex3f(*map(float, [end['X'], end['Y'], end['Z']]))
             except ValueError as e:

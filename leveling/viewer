@@ -8,11 +8,24 @@ from PyQt5 import QtGui, uic, QtCore, QtWidgets
 from PyQt5.QtOpenGL import *
 from viewerwidget import *
 
+class BackgroundTask(QtCore.QThread):
+  def __init__(self, fun, args):
+    QtCore.QThread.__init__(self)
+    self.fun = fun
+    self.args = args
+
+  def __del__(self):
+    self.wait()
+
+  def run(self):
+    self.fun(*self.args)
+
 class MainW(QtWidgets.QMainWindow):
   def __init__(self):
     QtWidgets.QMainWindow.__init__(self)
     uic.loadUi('viewer.ui', self)
-    self.gl.loadGCode(sys.argv[1])
+
+    BackgroundTask(self.gl.loadGCode, [sys.argv[1]]).start()
 
     self.fileWatcher = QtCore.QFileSystemWatcher()
     self.fileWatcher.fileChanged.connect(self.on_file_changed)
@@ -21,6 +34,10 @@ class MainW(QtWidgets.QMainWindow):
   def on_file_changed(self, name):
     print 'reload'
     self.gl.loadGCode(name)
+
+  @QtCore.pyqtSlot()
+  def on_btnResetView_clicked(self):
+    self.gl.resetView()
 
 
 def main():
