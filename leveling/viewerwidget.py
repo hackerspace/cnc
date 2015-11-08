@@ -54,6 +54,7 @@ class ViewerWidget(QGLWidget):
       self.update()
 
     def paintGL(self):
+        wtf = False
 
         glClearColor(0, 0, 0, 0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -63,9 +64,12 @@ class ViewerWidget(QGLWidget):
         L = 0
         glDisable(GL_DEPTH_TEST)
         glColor3f(0.8, 0.8, 0.8)
-        self.renderText(20, 20, self.filename)
-        self.renderText(20, 40, str(self.gcodesize) + ' cmds')
-        self.renderText(20, 60, str(self.objsize) + ' mm')
+        self.renderText(20, 20, '{} | {} cmds'.format(
+          self.filename, self.gcodesize))
+        self.renderText(20, 40, '{:.4f} x {:.4f} x {:.4f} mm'.format(
+          self.objsize[0], self.objsize[1], self.objsize[2]))
+#        self.renderText(20, 40, str(self.gcodesize) + ' cmds')
+#        self.renderText(20, 60, str(self.objsize) + ' mm')
         glEnable(GL_DEPTH_TEST)
 
         glRotatef(90, 1, 0, 0)
@@ -94,7 +98,11 @@ class ViewerWidget(QGLWidget):
               print>>sys.stderr, e.message
               glVertex3f(0,0,0)
           glEnd()
-          glEndList()
+          try:
+            glEndList()
+          except:
+            print 'wtf'
+            wtf = True
 
           glCallList(self.gcodelist)
         else:
@@ -106,6 +114,8 @@ class ViewerWidget(QGLWidget):
           glCallList(ViewerWidget.gcodelist)
         glPopMatrix()
         self.swapBuffers()
+        if wtf:
+          self.update()
 
     def resizeGL(self, w, h):
         glViewport(0, 0, w, h)
