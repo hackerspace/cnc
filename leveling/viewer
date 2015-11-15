@@ -25,7 +25,10 @@ class MainW(QtWidgets.QMainWindow):
     QtWidgets.QMainWindow.__init__(self)
     uic.loadUi('viewer.ui', self)
 
-    BackgroundTask(self.gl.loadGCode, [sys.argv[1]]).start()
+    def _cb(fname):
+      self.gl.loadGCode(fname)
+      self.gl.resetView()      
+    BackgroundTask(_cb, [sys.argv[1]]).start()
 
     self.fileWatcher = QtCore.QFileSystemWatcher()
     self.fileWatcher.fileChanged.connect(self.on_file_changed)
@@ -39,6 +42,17 @@ class MainW(QtWidgets.QMainWindow):
   def on_btnResetView_clicked(self):
     self.gl.resetView()
 
+  @QtCore.pyqtSlot()
+  def on_btnOpenFile_clicked(self):
+    d = QtWidgets.QFileDialog(self)
+    d.setNameFilter("GCode (*.ngc *.gcode);;All files (*.*)")
+    d.exec_()
+    name = d.selectedFiles()[0]
+    try:
+      open(name, 'r').close()
+      self.gl.loadGCode(name)
+    except IOError:
+      pass
 
 def main():
   app = QtWidgets.QApplication(['Viewer'])
