@@ -2,6 +2,7 @@
 import sys
 import os
 import png
+import itertools
 
 
 def Affine_Fit( from_pts, to_pts ):
@@ -433,7 +434,18 @@ if __name__=='__main__':
         exit(1)
       with open(fdata) as f_data:
         #load data and turn them into floats
-        level_data = map(lambda __x: map(lambda __y: map(float, __y.split()), __x.split(',')), f_data.readlines())
+        #level_data = map(lambda __x: map(lambda __y: map(float, __y.split()), __x.split(',')), f_data.readlines())
+
+        points = map(lambda x: map(float, x.split()), f_data.readlines())
+
+        points = sorted(points, key=lambda p: p[1]) # sort by y
+
+        level_data = []
+        for k,g in itertools.groupby(points, lambda x: x[1]):
+            level_data.append(list(g))
+
+        #print(level_data)
+        #print(len(level_data))
       #print level_data
       z_level = 0.0 # in milimeters
       milling = False
@@ -471,8 +483,10 @@ if __name__=='__main__':
                 #print>>sys.stderr, (intx_, inty_), (old_pt.x, p.x)
                 newline = find_and_replace(line, 'X', intx_)
                 newline = find_and_replace(newline, 'Y', inty_)
+                newline = find_zlevel_and_replace(newline, level_data,
+                                              base_z_level = z_level).strip()
 
-                print find_zlevel_and_replace(newline, level_data, base_z_level = z_level).strip(), '( {} )'.format(itera)
+                print('{} ( {} )'.format(newline, itera))
                 #print "(chuj", itera, get_path_len([old_pt, Pt(newline)])[1], ")"
 
               line = find_zlevel_and_replace(line, level_data, base_z_level = z_level)
