@@ -389,6 +389,9 @@ if __name__ == '__main__':
     merge_ = "--merge" in sys.argv
     affine_ = "--affine" in sys.argv
     zlevel_ = "--zlevel" in sys.argv
+
+    retract_mm = 5.0
+
     with open(sys.argv[1], "r") as fin:
         lines = fin.readlines()
         last_line = 0
@@ -489,15 +492,23 @@ if __name__ == '__main__':
                     continue
                 #print>>sys.stderr, "z:", z_level
 
-                # if "G00" == command_name(line):
-                #  old_pt = Pt(line)
-                if "G01" == command_name(line):
+                if "G00" == command_name(line):
+                    if "retract" in line:
+                        line = find_and_replace(line, 'Z', retract_mm)
+                        old_pt = None
+                    else:
+                        block_start_pt = Pt(line)
+
+                elif "G01" == command_name(line):
                     p = Pt(line)
                     if p.x is None and p.y is None:
                         z_level = p.z
                         if z_level < 0.0:
+                            fake_line = 'G01 X{} Y{}'.format(block_start_pt.x,
+                                                             block_start_pt.y)
+
                             l = find_zlevel_and_replace(
-                                "G01 X0.00000 Y0.00000 \n", level_data, base_z_level=z_level).strip()
+                                fake_line, level_data, base_z_level=z_level).strip()
                             #print>>sys.stderr, l
                             lpt = Pt(l)
                             line = find_and_replace(line, 'Z', lpt.z)
@@ -529,6 +540,7 @@ if __name__ == '__main__':
                             old_pt = p
                         else:
                             old_pt = p
+
                 print line.strip()
         else:
             scale = float(sys.argv[3])
