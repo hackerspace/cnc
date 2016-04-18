@@ -390,7 +390,7 @@ if __name__ == '__main__':
     affine_ = "--affine" in sys.argv
     zlevel_ = "--zlevel" in sys.argv
 
-    retract_mm = 5.0
+    retract_mm = 2.0
 
     with open(sys.argv[1], "r") as fin:
         lines = fin.readlines()
