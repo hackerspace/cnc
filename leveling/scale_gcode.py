@@ -192,8 +192,9 @@ def find_scale_and_replace(line, char, scale):
         if idx2 < 0 and line[-1].isspace() and line[-2].isdigit():
             idx2 = len(line) - 1
         precission = idx2 - line.find(".", idx1) - 1
+        precission = 5
         newX = round(float(line[idx1 + 1:idx2]) * scale, precission)
-        line = line[:idx1] + char + str(newX) + line[idx2:]
+        line = line[:idx1] + char + str("%0.0{}f".format(precission)%newX) + line[idx2:]
 
     return line
 
@@ -216,8 +217,9 @@ def find_and_replace(line, char, nval):
         if idx2 < 0 and line[-1].isspace() and line[-2].isdigit():
             idx2 = len(line) - 1
         precission = idx2 - line.find(".", idx1) - 1
+        precission = 5
         newX = round(nval, precission)
-        line = line[:idx1] + char + str(newX) + line[idx2:]
+        line = line[:idx1] + char + str("%0.0{}f".format(precission)%newX) + line[idx2:]
 
     return line
 
@@ -272,8 +274,10 @@ class Pt(object):
             if idx2 < 0 and line[-1].isspace() and line[-2].isdigit():
                 idx2 = len(line) - 1
             precission = idx2 - line.find(".", idx1) + 1
-            return [char, float(line[idx1 + 1:idx2]), precission]
-            line = line[:idx1] + char + str(newX) + line[idx2:]
+            try:
+                return [char, float(line[idx1 + 1:idx2]), precission]
+            except:
+                return None
 
     def to_pair(self):
         return (self.x, self.y)
@@ -478,12 +482,14 @@ if __name__ == '__main__':
 
                 level_data = []
                 for k, g in itertools.groupby(points, lambda x: x[1]):
-                    level_data.append(list(g))
+                    level_data.append(list(sorted(list(g), reverse=True)))
 
-                # print(level_data)
+                #print("Level data")
+                #print(level_data)
                 # print(len(level_data))
             # print level_data
             z_level = 0.0  # in milimeters
+            precision = 5
             milling = False
             old_pt = None
             for lnum, line in enumerate(lines):
@@ -501,17 +507,20 @@ if __name__ == '__main__':
 
                 elif "G01" == command_name(line):
                     p = Pt(line)
-                    if p.x is None and p.y is None:
+                    if p.z is not None:
                         z_level = p.z
+                    if p.x is None and p.y is None:
                         if z_level < 0.0:
-                            fake_line = 'G01 X{} Y{}'.format(block_start_pt.x,
-                                                             block_start_pt.y)
+                            fake_line = 'G01 X{} Y{} Z{} F100 (begin)'.format(block_start_pt.x,
+                                                             block_start_pt.y, z_level)
 
-                            l = find_zlevel_and_replace(
+                            line = find_zlevel_and_replace(
                                 fake_line, level_data, base_z_level=z_level).strip()
+                            old_pt = block_start_pt
+                            old_pt.z = p.z
                             #print>>sys.stderr, l
-                            lpt = Pt(l)
-                            line = find_and_replace(line, 'Z', lpt.z)
+                            #lpt = Pt(l)
+                            #line = find_and_replace(line, 'Z', lpt.z)
                             #print>>sys.stderr, z_level, repr(line), repr(old_pt)
                         # we've have found MILLING END OR BEGIN
                     elif z_level < 0.0:
@@ -521,27 +530,31 @@ if __name__ == '__main__':
                             STEP = intpstep  # in mm
                             segment_len = get_path_len([old_pt, p])[1]
                             #print>>sys.stderr, segment_len
-                            t_step = STEP / segment_len
-                            for itera in xrange(1, int(segment_len / STEP)):
-                                intx_ = lerp(old_pt.x, p.x, itera * t_step)
-                                inty_ = lerp(old_pt.y, p.y, itera * t_step)
-                                #print>>sys.stderr, (intx_, inty_), (old_pt.x, p.x)
-                                newline = find_and_replace(line, 'X', intx_)
-                                newline = find_and_replace(newline, 'Y', inty_)
-                                newline = find_zlevel_and_replace(newline, level_data,
-                                                                  base_z_level=z_level).strip()
+                            if not segment_len == 0:
+                                t_step = STEP / segment_len
+                                for itera in xrange(1, int(segment_len / STEP)):
+                                    intx_ = lerp(old_pt.x, p.x, itera * t_step)
+                                    inty_ = lerp(old_pt.y, p.y, itera * t_step)
+                                    #print>>sys.stderr, (intx_, inty_), (old_pt.x, p.x)
+                                    newline = find_and_replace(line, 'X', intx_)
+                                    newline = find_and_replace(newline, 'Y', inty_)
+                                    newline = find_and_replace(newline, 'Z', z_level)
+                                    newline = find_zlevel_and_replace(newline, level_data,
+                                                                      base_z_level=z_level).strip()
 
-                                print('{} ( {} )'.format(newline, itera))
-                                # print "(chuj", itera, get_path_len([old_pt,
-                                # Pt(newline)])[1], ")"
+                                    print('{} ( {} L:{} )'.format(newline, itera, lnum))
+                                    # print "(chuj", itera, get_path_len([old_pt,
+                                    # Pt(newline)])[1], ")"
 
                             line = find_zlevel_and_replace(
                                 line, level_data, base_z_level=z_level)
                             old_pt = p
                         else:
+                            line = find_zlevel_and_replace(
+                                line, level_data, base_z_level=z_level)
                             old_pt = p
 
-                print line.strip()
+                print line.strip(), ' ( L:{} )'.format(lnum)
         else:
             scale = float(sys.argv[3])
             for lnum, line in enumerate(lines):

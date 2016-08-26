@@ -11,10 +11,18 @@ def bilinear(x, y, zmap):
 
   Qidx = get_quadrant_idx(x, y, zmap)
   #print x,y, Qidx
-  Q = [[zmap[Qidx[1]][Qidx[0]],
-        zmap[Qidx[1]][Qidx[0]+1]],
-       [zmap[Qidx[1]+1][Qidx[0]],
-        zmap[Qidx[1]+1][Qidx[0]+1]]]
+  try:
+    Q = [[zmap[Qidx[1]][Qidx[0]],
+          zmap[Qidx[1]][Qidx[0]+1]],
+         [zmap[Qidx[1]+1][Qidx[0]],
+          zmap[Qidx[1]+1][Qidx[0]+1]]]
+  except Exception as e:
+    print('No zmap for point {} {}'.format(x, y))
+    print('Quadrant {}'.format(Qidx))
+    print('Ensure your G-code is within probed area boundaries")
+    print(zmap)
+    print(e)
+    return
   # Q now contains 4 triples (machine x, machine y, z height)
   # as Q11, Q12, Q21, Q22
 
