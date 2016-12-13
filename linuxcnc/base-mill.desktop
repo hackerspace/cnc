@@ -1,0 +1,8 @@
+[Desktop Entry]
+Version=1.0
+Terminal=false
+Name=launch base-mill
+Exec=linuxcnc /home/base/linuxcnc/configs/base-mill/base-mill.ini
+Type=Application
+Comment=Desktop Launcher for LinuxCNC config made by Stepconf
+Icon=/usr/share/linuxcnc/linuxcncicon.png
