@@ -1,0 +1,2 @@
+# use with
+pronsole --conf pronsolerc_shapeoko -e connect
