@@ -20,9 +20,9 @@ macro psu_off
   M43
 
 macro motors_on
-  M444 C0 S35000 ; motor current to mid
+  M444 C0 S35000 ; psu voltage to mid
   M17
-  M444 C0 S65000 ; motor current to max - 37V
+  M444 C0 S65000 ; psu voltage to max - 37V
 
 macro motors_off
   M18
