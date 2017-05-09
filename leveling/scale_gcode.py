@@ -482,7 +482,8 @@ if __name__ == '__main__':
 
                 level_data = []
                 for k, g in itertools.groupby(points, lambda x: x[1]):
-                    level_data.append(list(sorted(list(g), reverse=True)))
+                    #level_data.append(list(sorted(list(g), reverse=True)))
+                    level_data.append(list((list(g))))
 
                 #print("Level data")
                 #print(level_data)
