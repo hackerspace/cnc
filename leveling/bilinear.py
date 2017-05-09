@@ -19,10 +19,9 @@ def bilinear(x, y, zmap):
   except Exception as e:
     print('No zmap for point {} {}'.format(x, y))
     print('Quadrant {}'.format(Qidx))
-    print('Ensure your G-code is within probed area boundaries")
+    print('Ensure your G-code is within probed area boundaries')
     print(zmap)
-    print(e)
-    return
+    raise e
   # Q now contains 4 triples (machine x, machine y, z height)
   # as Q11, Q12, Q21, Q22
 
