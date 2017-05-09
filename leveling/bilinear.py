@@ -2,12 +2,30 @@ import math
 import os
 def bilinear(x, y, zmap):
   def get_quadrant_idx(x, y, zmap):
-    ysize = float(len(zmap))
-    xsize = float(len(zmap[0]))
-    percents = (x/zmap[0][-1][0], y/zmap[-1][-1][1])
-    #print percents
-    q_low = (percents[0] * (xsize-1), percents[1] * (ysize-1))
-    return map(int, [q_low[0], q_low[1]])
+
+    ysize = len(zmap)
+    xsize = len(zmap[0])
+
+    coord_l = list()
+
+    for yi in range(ysize):
+      for xi in range(xsize):
+        coord_l.append(zmap[yi][xi])
+
+    minx = min([ coord[0] for coord in coord_l])
+    miny = min([ coord[1] for coord in coord_l])
+    
+    maxx = max([ coord[0] for coord in coord_l])
+    maxy = max([ coord[1] for coord in coord_l])
+
+    x_perc = (x - minx) / (maxx - minx) 
+    y_perc = (y - miny) / (maxy - miny) 
+
+    return (
+      int( x_perc * (xsize - 1) ),
+      int( y_perc * (ysize - 1) )
+    )
+
 
   Qidx = get_quadrant_idx(x, y, zmap)
   #print x,y, Qidx
